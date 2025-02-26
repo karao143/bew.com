@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Attractive Attendance Management System</title>
+  <style>
+    /* Container to center all page content */
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    /* General Page Styles */
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 0; 
+      padding: 0; 
+      background-color: #f7f7f7;
+      color: #333;
+    }
+    .header { 
+      background-color: #4CAF50; 
+      color: white; 
+      padding: 20px; 
+    }
+    .header h1, .header h2 { 
+      margin: 0; 
+    }
+    .section { 
+      margin: 20px auto; 
+      padding: 20px; 
+      border-radius: 8px;
+      background-color: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      border: 1px solid #ddd;
+    }
+    /* Inputs and Buttons */
+    input[type="text"],
+    input[type="password"],
+    input[type="number"] { 
+      width: 200px; 
+      text-align: center; 
+      margin-bottom: 10px; 
+      padding: 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button { 
+      margin-top: 10px; 
+      padding: 8px 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #notification {
+      color: green;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    /* Table Containers */
+    #admin-table-container,
+    #employee-table-container {
+      margin: 20px auto;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+    /* Table Styling */
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      table-layout: fixed; 
+    }
+    table, th, td { 
+      border: 1px solid #ddd; 
+    }
+    th, td { 
+      padding: 8px; 
+      text-align: center; 
+      font-size: 12px; 
+      vertical-align: middle;
+    }
+    /* Header Colors for Tables */
+    thead th { 
+      background-color: #cce5ff; 
+      color: #333;
+    }
+    /* Alternating Row Colors */
+    tbody tr:nth-child(odd) { 
+      background-color: #f9f9f9;
+    }
+    tbody tr:nth-child(even) { 
+      background-color: #ffffff;
+    }
+    /* Column widths */
+    .emp-id, .name-cell { 
+      width: 80px; 
+    }
+    .day-cell { 
+      width: 30px; 
+    }
+    /* Admin Editable Table Specifics */
+    #admin-attendance-table th,
+    #admin-attendance-table td {
+      padding: 0;
+    }
+    #admin-attendance-table input {
+      display: block;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 4px;
+      border: 1px solid #ccc;
+      background: #e8f0fe;
+      text-align: center;
+      box-sizing: border-box;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>BINDU ENGINEERING WORKS</h1>
+      <h2>ATTENDANCE MANAGEMENT SYSTEM</h2>
+    </div>
+    
+    <!-- Employer Login Section -->
+    <div class="section" id="employer-login-section">
+      <h3>Employer Login</h3>
+      <input type="text" id="employer-username" placeholder="Username">
+      <input type="password" id="employer-password" placeholder="Password">
+      <button onclick="employerLogin()">Login</button>
+    </div>
+    
+    <!-- Employer Editable Table Section (Hidden until login) -->
+    <div class="section" id="employer-content-section" style="display: none;">
+      <h3>Admin Attendance (Editable)</h3>
+      <label for="admin-year">Year:</label>
+      <input type="number" id="admin-year" value="2025" min="1000" max="9999">
+      <label for="admin-month">Month:</label>
+      <input type="number" id="admin-month" value="2" min="1" max="12">
+      <button onclick="generateAdminTable()">Generate Table</button>
+      <button onclick="saveTable()">Save Data</button>
+      <button onclick="employerLogout()">Log Out</button>
+      <div id="notification"></div>
+      <div id="admin-table-container"></div>
+    </div>
+    
+    <!-- Employee Filter Section (Accessible without login) -->
+    <div class="section" id="employee-filter-section">
+      <h3>View Your Attendance</h3>
+      <input type="text" id="employee-id" placeholder="Enter Employee ID">
+      <input type="number" id="filter-year" placeholder="Year" value="2025" min="1000" max="9999">
+      <input type="number" id="filter-month" placeholder="Month" value="2" min="1" max="12">
+      <button onclick="showEmployeeAttendance()">Show Attendance</button>
+      <button onclick="resetEmployeeAttendance()">Reset</button>
+      <div id="employee-table-container"></div>
+    </div>
+  </div>
+  
+  <script>
+    // Employer Login Functions
+    function employerLogin() {
+      const username = document.getElementById("employer-username").value;
+      const password = document.getElementById("employer-password").value;
+      if (username === "admin" && password === "password123") {
+        sessionStorage.setItem("loggedIn", "true");
+        document.getElementById("employer-login-section").style.display = "none";
+        document.getElementById("employer-content-section").style.display = "block";
+      } else {
+        alert("Invalid username or password!");
+      }
+    }
+    
+    function employerLogout() {
+      sessionStorage.removeItem("loggedIn");
+      location.reload();
+    }
+    
+    // Generates an editable table for the admin—each cell is an input field.
+    function generateAdminTable() {
+      const year = parseInt(document.getElementById("admin-year").value);
+      const month = parseInt(document.getElementById("admin-month").value);
+      const numDays = new Date(year, month, 0).getDate();
+      const storageKey = `attendance-${year}-${month}`;
+      let savedData = localStorage.getItem(storageKey);
+      savedData = savedData ? JSON.parse(savedData) : {};
+      
+      let tableHTML = "<table id='admin-attendance-table'><thead><tr>";
+      tableHTML += "<th class='emp-id'>Emp ID</th><th class='name-cell'>Name</th>";
+      for (let day = 1; day <= numDays; day++) {
+        tableHTML += `<th class='day-cell'>${day}</th>`;
+      }
+      tableHTML += "</tr></thead><tbody>";
+      
+      // Create 15 rows for 15 employees.
+      for (let i = 1; i <= 15; i++) {
+        tableHTML += "<tr>";
+        const empIdVal = savedData[`row${i}-empId`] || `emp${i}`;
+        const nameVal = savedData[`row${i}-name`] || `Employee ${i}`;
+        tableHTML += `<td class='emp-id'><input type='text' value='${empIdVal}' /></td>`;
+        tableHTML += `<td class='name-cell'><input type='text' value='${nameVal}' /></td>`;
+        for (let day = 1; day <= numDays; day++) {
+          const dayVal = savedData[`row${i}-day${day}`] || "";
+          tableHTML += `<td class='day-cell'><input type='text' value='${dayVal}' onchange="validateDayCell(this)" /></td>`;
+        }
+        tableHTML += "</tr>";
+      }
+      tableHTML += "</tbody></table>";
+      document.getElementById("admin-table-container").innerHTML = tableHTML;
+    }
+    
+    // Validates day cell input to allow only P, A, HF, or H.
+    function validateDayCell(input) {
+      const validValues = ["P", "A", "HF", "H"];
+      const trimmedValue = input.value.trim();
+      if (trimmedValue !== "" && validValues.indexOf(trimmedValue) === -1) {
+        alert("Invalid input! Only P, A, HF, and H are allowed.");
+        input.value = "";
+      }
+    }
+    
+    // Saves the current table data into localStorage.
+    function saveTable() {
+      const table = document.getElementById("admin-attendance-table");
+      if (!table) {
+        alert("Please generate the table first.");
+        return;
+      }
+      const year = parseInt(document.getElementById("admin-year").value);
+      const month = parseInt(document.getElementById("admin-month").value);
+      const storageKey = `attendance-${year}-${month}`;
+      const data = {};
+      const rows = table.querySelectorAll("tbody tr");
+      
+      rows.forEach((row, rowIndex) => {
+        const inputs = row.querySelectorAll("input");
+        data[`row${rowIndex + 1}-empId`] = inputs[0].value;
+        data[`row${rowIndex + 1}-name`] = inputs[1].value;
+        // Loop through day inputs.
+        for (let day = 1; day <= inputs.length - 2; day++) {
+          data[`row${rowIndex + 1}-day${day}`] = inputs[day + 1].value;
+        }
+      });
+      
+      localStorage.setItem(storageKey, JSON.stringify(data));
+      
+      const notification = document.getElementById("notification");
+      notification.innerText = "Data saved successfully!";
+      setTimeout(() => {
+        notification.innerText = "";
+      }, 3000);
+      
+      generateAdminTable();
+    }
+    
+    // Generates a non-editable table for employees (view attendance).
+    function generateEmployeeTable() {
+      const year = parseInt(document.getElementById("filter-year").value);
+      const month = parseInt(document.getElementById("filter-month").value);
+      const numDays = new Date(year, month, 0).getDate();
+      const storageKey = `attendance-${year}-${month}`;
+      let savedData = localStorage.getItem(storageKey);
+      savedData = savedData ? JSON.parse(savedData) : {};
+      
+      let tableHTML = "<table id='employee-attendance-table'><thead><tr>";
+      tableHTML += "<th class='emp-id'>Emp ID</th><th class='name-cell'>Name</th>";
+      for (let day = 1; day <= numDays; day++) {
+        tableHTML += `<th class='day-cell'>${day}</th>`;
+      }
+      tableHTML += "</tr></thead><tbody>";
+      
+      for (let i = 1; i <= 15; i++) {
+        tableHTML += "<tr>";
+        const empIdVal = savedData[`row${i}-empId`] || `emp${i}`;
+        const nameVal = savedData[`row${i}-name`] || `Employee ${i}`;
+        tableHTML += `<td class='emp-id'>${empIdVal}</td>`;
+        tableHTML += `<td class='name-cell'>${nameVal}</td>`;
+        for (let day = 1; day <= numDays; day++) {
+          const dayVal = savedData[`row${i}-day${day}`] || "P";
+          tableHTML += `<td class='day-cell'>${dayVal}</td>`;
+        }
+        tableHTML += "</tr>";
+      }
+      tableHTML += "</tbody></table>";
+      document.getElementById("employee-table-container").innerHTML = tableHTML;
+    }
+    
+    // Filters the employee table by matching Employee ID.
+    function showEmployeeAttendance() {
+      const empId = document.getElementById("employee-id").value.trim();
+      generateEmployeeTable();
+      const rows = document.querySelectorAll("#employee-attendance-table tbody tr");
+      rows.forEach((row) => {
+        const cellText = row.cells[0].textContent.trim();
+        row.style.display = cellText === empId ? "" : "none";
+      });
+    }
+    
+    // Reset function to clear the employee attendance table and input field.
+    function resetEmployeeAttendance() {
+      document.getElementById("employee-table-container").innerHTML = "";
+      document.getElementById("employee-id").value = "";
+    }
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
